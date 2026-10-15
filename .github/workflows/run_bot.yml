@@ -1,18 +1,25 @@
 name: 24-7 Lead Radar
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   send-leads:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Radar Bot
+      - name: Run Radar Bot & Save State
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           pip install requests
           python bot.py
+          git config user.name "JeevanStack Bot"
+          git config user.email "jeevanstack@users.noreply.github.com"
+          git add seen_ids.json || true
+          git diff --staged --quiet || (git commit -m "Update seen leads state" && git pull --rebase && git push)
