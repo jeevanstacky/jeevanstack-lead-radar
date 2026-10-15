@@ -66,37 +66,49 @@ def forward_customer_inquiries(state):
 def fetch_and_send_leads(state):
     seen = set(state.get("seen_jobs", []))
     headers = {'User-Agent': 'Mozilla/5.0'}
-    r = requests.get("https://remoteok.com/api", headers=headers, timeout=15)
-    listings = r.json()[1:]
+    new_items = []
 
-    new_jobs = []
-    for j in listings:
-        jid = str(j.get("id", ""))
-        if jid and jid not in seen:
-            new_jobs.append(j)
-            seen.add(jid)
-        if len(new_jobs) >= 4:
-            break
+    # Source 1: RemoteOK
+    try:
+        r = requests.get("https://remoteok.com/api", headers=headers, timeout=12)
+        for j in r.json()[1:]:
+            jid = f"rok_{j.get('id', '')}"
+            if jid not in seen and len(new_items) < 2:
+                seen.add(jid)
+                pos = j.get("position", "Role").replace("<", "&lt;").replace(">", "&gt;")
+                comp = j.get("company", "Company").replace("<", "&lt;").replace(">", "&gt;")
+                s_min, s_max = j.get("salary_min", 0), j.get("salary_max", 0)
+                sal = f"💰 ${s_min//1000}k–${s_max//1000}k/yr\n" if s_min and s_max else ""
+                tags = ", ".join(j.get("tags", [])[:4]) or "remote, tech"
+                url = j.get("url", "https://remoteok.com")
+                new_items.append(f"🔹 <b>{pos}</b> at {comp}\n{sal}🏷 <code>{tags}</code> (RemoteOK)\n👉 <a href='{url}'>Apply / Pitch Direct</a>")
+    except Exception as e:
+        print("RemoteOK error:", e)
 
-    if not new_jobs:
-        print("No brand new jobs this hour.")
+    # Source 2: Y Combinator / Hacker News Official Job Stream
+    try:
+        hn_ids = requests.get("https://hacker-news.firebaseio.com/v0/jobstories.json", timeout=10).json()[:15]
+        for hid in hn_ids:
+            jid = f"hn_{hid}"
+            if jid not in seen and len(new_items) < 4:
+                item = requests.get(f"https://hacker-news.firebaseio.com/v0/item/{hid}.json", timeout=10).json()
+                if item and item.get("title"):
+                    seen.add(jid)
+                    title = item.get("title", "YC Startup Role").replace("<", "&lt;").replace(">", "&gt;")
+                    url = item.get("url") or f"https://news.ycombinator.com/item?id={hid}"
+                    new_items.append(f"🟧 <b>{title}</b>\n🏷 <code>YC Startup / HN Jobs</code>\n👉 <a href='{url}'>View YC Startup Role</a>")
+    except Exception as e:
+        print("HN/YC error:", e)
+
+    if not new_items:
+        print("No brand new jobs this cycle.")
         return
 
-    msg = "🚀 <b>FRESH REMOTE TECH & FREELANCE LEADS</b>\n\n"
-    for j in new_jobs:
-        position = j.get("position", "Role").replace("<", "&lt;").replace(">", "&gt;")
-        company = j.get("company", "Company").replace("<", "&lt;").replace(">", "&gt;")
-        url = j.get("url", "https://remoteok.com")
-        salary_min = j.get("salary_min", 0)
-        salary_max = j.get("salary_max", 0)
-        sal_str = f"💰 ${salary_min//1000}k–${salary_max//1000}k/yr\n" if salary_min and salary_max else ""
-        tags = ", ".join(j.get("tags", [])[:4])
-        msg += f"🔹 <b>{position}</b> at {company}\n{sal_str}🏷 <code>{tags}</code>\n👉 <a href='{url}'>Apply / Pitch Client</a>\n\n"
-
-    msg += "🌐 <a href='https://jeevanstacky.github.io/jeevanstack-lead-radar/'>Get VIP Alerts or Order a Custom Bot</a>"
+    msg = "🚀 <b>LIVE RADAR: REMOTE & YC STARTUP LEADS</b>\n\n" + "\n\n".join(new_items)
+    msg += "\n\n🌐 <a href='https://jeevanstacky.github.io/jeevanstack-lead-radar/'>VIP Radar (₹299/mo) | Order Custom 24/7 Bot (₹4,999)</a>"
     res = send_tg(CHAT_ID, msg)
-    print("Lead Broadcast Status:", res.status_code)
-    state["seen_jobs"] = list(seen)[-200:]
+    print("Multi-Source Broadcast Status:", res.status_code)
+    state["seen_jobs"] = list(seen)[-300:]
 
 if __name__ == "__main__":
     state = load_json(SEEN_FILE, {"last_update_id": 0, "seen_jobs": []})
