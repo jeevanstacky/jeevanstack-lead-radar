@@ -106,7 +106,7 @@ def fetch_and_send_leads(state):
 
     msg = "🚀 <b>LIVE RADAR: REMOTE & YC STARTUP LEADS</b>\n\n" + "\n\n".join(new_items)
     msg += "\n\n🌐 <a href='https://jeevanstacky.github.io/jeevanstack-lead-radar/'>VIP Radar (₹299/mo) | Order Custom 24/7 Bot (₹4,999)</a>"
-    res = send_tg(CHAT_ID, msg)
+    res = send_tg("@jeevanalerts", msg)
     print("Multi-Source Broadcast Status:", res.status_code)
     state["seen_jobs"] = seen[-500:]
 
