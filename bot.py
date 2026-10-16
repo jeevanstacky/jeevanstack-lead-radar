@@ -64,7 +64,7 @@ def forward_customer_inquiries(state):
         print("Inbox check error:", e)
 
 def fetch_and_send_leads(state):
-    seen = set(state.get("seen_jobs", []))
+    seen = list(state.get("seen_jobs", []))
     headers = {'User-Agent': 'Mozilla/5.0'}
     new_items = []
 
@@ -74,7 +74,7 @@ def fetch_and_send_leads(state):
         for j in r.json()[1:]:
             jid = f"rok_{j.get('id', '')}"
             if jid not in seen and len(new_items) < 2:
-                seen.add(jid)
+                seen.append(jid)
                 pos = j.get("position", "Role").replace("<", "&lt;").replace(">", "&gt;")
                 comp = j.get("company", "Company").replace("<", "&lt;").replace(">", "&gt;")
                 s_min, s_max = j.get("salary_min", 0), j.get("salary_max", 0)
@@ -93,7 +93,7 @@ def fetch_and_send_leads(state):
             if jid not in seen and len(new_items) < 4:
                 item = requests.get(f"https://hacker-news.firebaseio.com/v0/item/{hid}.json", timeout=10).json()
                 if item and item.get("title"):
-                    seen.add(jid)
+                    seen.append(jid)
                     title = item.get("title", "YC Startup Role").replace("<", "&lt;").replace(">", "&gt;")
                     url = item.get("url") or f"https://news.ycombinator.com/item?id={hid}"
                     new_items.append(f"🟧 <b>{title}</b>\n🏷 <code>YC Startup / HN Jobs</code>\n👉 <a href='{url}'>View YC Startup Role</a>")
@@ -108,7 +108,7 @@ def fetch_and_send_leads(state):
     msg += "\n\n🌐 <a href='https://jeevanstacky.github.io/jeevanstack-lead-radar/'>VIP Radar (₹299/mo) | Order Custom 24/7 Bot (₹4,999)</a>"
     res = send_tg(CHAT_ID, msg)
     print("Multi-Source Broadcast Status:", res.status_code)
-    state["seen_jobs"] = list(seen)[-300:]
+    state["seen_jobs"] = seen[-500:]
 
 if __name__ == "__main__":
     state = load_json(SEEN_FILE, {"last_update_id": 0, "seen_jobs": []})
