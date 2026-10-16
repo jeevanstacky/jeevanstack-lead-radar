@@ -59,7 +59,13 @@ def forward_customer_inquiries(state):
                     f"👉 Tap @{uname} to close the deal!"
                 )
                 send_tg(CHAT_ID, alert)
-                send_tg(sender_id, "⚡ <b>JeevanStack Radar:</b> Got your message! Jeevan (CEO) has been notified and will reach out to you shortly.")
+                send_tg(sender_id, "⚡ <b>Welcome to JeevanStack Radar!</b>
+
+🎁 <b>1. Join the Live Radar Feed Here:</b>
+👉 <a href="https://t.me/jeevanalerts">t.me/jeevanalerts</a> (Tap to join)
+
+🛠 <b>2. Want a Custom 24/7 Bot (₹4,999 / $79) or Niche Filter (₹299/mo)?</b>
+Reply right here with what you want tracked (e.g., <i>Python/React gigs, Upwork/Reddit leads, Crypto/Stock alerts, or E-commerce prices</i>) — Jeevan (CEO) has been notified and will set you up!")
     except Exception as e:
         print("Inbox check error:", e)
 
